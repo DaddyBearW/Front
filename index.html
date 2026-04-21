@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Заметки</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2f6fed">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <h1>Заметки</h1>
+
+      <nav class="tabs">
+        <button id="home-btn" class="tab active" type="button">Главная</button>
+      </nav>
+    </header>
+
+    <main id="app-content" class="content">
+      <p>Загрузка...</p>
+    </main>
+
+    <footer class="footer">
+      <button id="enable-push" class="btn btn-green" type="button">Включить уведомления</button>
+      <button id="disable-push" class="btn btn-red hidden" type="button">Отключить уведомления</button>
+      <p class="footer-text">Если разрешить уведомления, приложение будет присылать push и напоминания.</p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <noscript>Для работы приложения нужен JavaScript.</noscript>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
