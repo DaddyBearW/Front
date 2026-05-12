@@ -1,0 +1,29 @@
+{
+  "name": "kr4-backend-load-balancing-cache-db",
+  "version": "1.0.0",
+  "description": "Контрольная работа №4: PostgreSQL, MongoDB, Redis, Nginx/HAProxy, Docker Compose",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "express",
+    "postgresql",
+    "mongodb",
+    "redis",
+    "nginx",
+    "haproxy",
+    "docker"
+  ],
+  "author": "student",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mongoose": "^8.9.5",
+    "pg": "^8.13.1",
+    "redis": "^4.7.0",
+    "sequelize": "^6.37.5"
+  }
+}

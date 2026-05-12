@@ -1,0 +1,111 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - kr4-network
+
+  haproxy:
+    image: haproxy:3.0-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - backend1
+      - backend2
+      - backend3
+    networks:
+      - kr4-network
+
+  backend1:
+    build: .
+    environment:
+      PORT: 3000
+      SERVER_ID: backend-1
+      DATABASE_URL: postgres://kr4_user:kr4_password@postgres:5432/kr4_db
+      MONGO_URL: mongodb://mongo:27017/kr4_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    networks:
+      - kr4-network
+
+  backend2:
+    build: .
+    environment:
+      PORT: 3000
+      SERVER_ID: backend-2
+      DATABASE_URL: postgres://kr4_user:kr4_password@postgres:5432/kr4_db
+      MONGO_URL: mongodb://mongo:27017/kr4_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    networks:
+      - kr4-network
+
+  backend3:
+    build: .
+    environment:
+      PORT: 3000
+      SERVER_ID: backend-3-backup
+      DATABASE_URL: postgres://kr4_user:kr4_password@postgres:5432/kr4_db
+      MONGO_URL: mongodb://mongo:27017/kr4_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - mongo
+      - redis
+    networks:
+      - kr4-network
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: kr4_user
+      POSTGRES_PASSWORD: kr4_password
+      POSTGRES_DB: kr4_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kr4-network
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kr4-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kr4-network
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+
+networks:
+  kr4-network:
+    driver: bridge

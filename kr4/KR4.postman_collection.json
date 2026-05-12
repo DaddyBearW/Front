@@ -1,0 +1,369 @@
+{
+  "info": {
+    "name": "KR4 API tests",
+    "description": "Postman collection for KR4: PostgreSQL CRUD, MongoDB CRUD, Redis cache, Nginx/HAProxy balancing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost"
+    },
+    {
+      "key": "haproxyUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "pgUserId",
+      "value": ""
+    },
+    {
+      "key": "mongoUserId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Nginx root response",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Response has server field', function () { pm.expect(json.server).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 HAProxy root response",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{haproxyUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('HAProxy response has server field', function () { pm.expect(json.server).to.be.a('string'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Create PostgreSQL user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Иван\",\n  \"last_name\": \"Петров\",\n  \"age\": 22\n}"
+        },
+        "url": "{{baseUrl}}/api/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('User created', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('pgUserId', json.id);",
+              "pm.test('PostgreSQL user has required fields', function () {",
+              "  pm.expect(json).to.have.property('id');",
+              "  pm.expect(json.first_name).to.eql('Иван');",
+              "  pm.expect(json).to.have.property('created_at');",
+              "  pm.expect(json).to.have.property('updated_at');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Get PostgreSQL users first time",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Response contains data array', function () { pm.expect(json.data).to.be.an('array'); });",
+              "pm.test('Source is server or cache', function () { pm.expect(['server', 'cache']).to.include(json.source); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Get PostgreSQL users second time cache",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Second response comes from Redis cache', function () { pm.expect(json.source).to.eql('cache'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Get PostgreSQL user by id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{pgUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('User id matches variable', function () { pm.expect(String(json.data.id)).to.eql(String(pm.collectionVariables.get('pgUserId'))); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Update PostgreSQL user",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"age\": 23\n}"
+        },
+        "url": "{{baseUrl}}/api/users/{{pgUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Age changed', function () { pm.expect(json.age).to.eql(23); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Get products first time",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Products array exists', function () { pm.expect(json.data).to.be.an('array'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Get products second time cache",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/products"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Products came from cache', function () { pm.expect(json.source).to.eql('cache'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Create MongoDB user",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"first_name\": \"Мария\",\n  \"last_name\": \"Иванова\",\n  \"age\": 20\n}"
+        },
+        "url": "{{baseUrl}}/api/mongo-users"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Mongo user created', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('mongoUserId', json.id);",
+              "pm.test('Mongo user has numeric id', function () { pm.expect(json.id).to.be.a('number'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Get MongoDB user by id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/mongo-users/{{mongoUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Mongo user id matches variable', function () { pm.expect(String(json.id)).to.eql(String(pm.collectionVariables.get('mongoUserId'))); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Update MongoDB user",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"last_name\": \"Сидорова\"\n}"
+        },
+        "url": "{{baseUrl}}/api/mongo-users/{{mongoUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Last name changed', function () { pm.expect(json.last_name).to.eql('Сидорова'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Delete PostgreSQL user",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/users/{{pgUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Delete message exists', function () { pm.expect(json.message).to.eql('User deleted'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Delete MongoDB user",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/mongo-users/{{mongoUserId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Delete message exists', function () { pm.expect(json.message).to.eql('Mongo user deleted'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
